@@ -1,0 +1,25 @@
+name = "turborepo-remote-cache-api"
+type = "javascript"
+
+account_id = ""
+workers_dev = true
+route = ""
+zone_id = ""
+
+compatibility_date = "2021-12-18"
+compatibility_flags = []
+
+kv_namespaces = [
+  { binding = "ARTIFACTS", id = "<ignored>", preview_id = "<ignored>" },
+]
+
+[build]
+command = "pnpm run build"
+
+[build.upload]
+format = "modules"
+dir = "dist"
+main = "./index.mjs"
+
+[miniflare]
+kv_persist = true
