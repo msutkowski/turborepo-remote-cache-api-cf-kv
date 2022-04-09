@@ -22,14 +22,14 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^3.2.0",
     "@types/itty-router-extras": "^0.4.0",
-    "@types/jest": "^27.0.2",
-    "esbuild": "^0.13.13",
-    "jest": "^27.3.1",
+    "@types/jest": "^27.0.3",
+    "esbuild": "^0.13.15",
+    "jest": "^27.4.5",
     "jest-environment-miniflare": "^2.0.0-rc.1",
-    "miniflare": "^2.0.0-rc.1",
-    "prettier": "^2.4.1",
-    "ts-jest": "^27.0.7",
-    "typescript": "^4.4.4"
+    "miniflare": "^2.4.0",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.2",
+    "typescript": "^4.5.4"
   },
   "dependencies": {
     "itty-router": "^2.4.7",
