@@ -1,9 +1,31 @@
-import { Request as IttyRequest, Router } from "itty-router";
-import { error, json, missing } from "itty-router-extras";
+import { Request as IttyRequest } from "itty-router";
+import {
+  error,
+  json,
+  missing,
+  StatusError,
+  ThrowableRouter,
+} from "itty-router-extras";
 
-const router = Router();
+const router = ThrowableRouter();
 
-router.get("/v8/artifacts/:id", async (request, env) => {
+type FullRequest = Request & IttyRequest;
+
+const checkToken = (request: FullRequest, env: Bindings) => {
+  const authToken = request.headers.get("authorization")?.split(" ")[1];
+
+  if (!authToken) {
+    throw new StatusError(401, "Missing auth token");
+  }
+
+  if (!env.ALLOWED_TOKENS.includes(authToken)) {
+    throw new StatusError(401, "Invalid auth token");
+  }
+};
+
+router.get("/v8/artifacts/:id", async (request: FullRequest, env: Bindings) => {
+  checkToken(request, env);
+
   if (!request.params?.id)
     return error(400, `Can't lookup an artifact without an id`);
 
@@ -18,7 +40,9 @@ router.get("/v8/artifacts/:id", async (request, env) => {
   return new Response(existingArtifact);
 });
 
-async function saveArtifact(request: Request & IttyRequest, env: Bindings) {
+async function saveArtifact(request: FullRequest, env: Bindings) {
+  checkToken(request, env);
+
   const { ARTIFACTS } = env;
   if (!request.params?.id)
     return error(400, `Can't store an artifact without an id`);
