@@ -1,63 +1,61 @@
-import { Request as IttyRequest } from "itty-router";
-import {
-  error,
-  json,
-  missing,
-  StatusError,
-  ThrowableRouter,
-} from "itty-router-extras";
+import { Context, Hono } from "hono";
+import { Bindings } from "./types";
 
-const router = ThrowableRouter();
+const app = new Hono<{ Bindings: Bindings }>();
 
-type FullRequest = Request & IttyRequest;
-
-const checkToken = (request: FullRequest, env: Bindings) => {
-  const authToken = request.headers.get("authorization")?.split(" ")[1];
+app.use("*", async (c, next) => {
+  const { ALLOWED_TOKENS } = c.env;
+  const authToken = c.req.header("authorization")?.split(" ")[1];
 
   if (!authToken) {
-    throw new StatusError(401, "Missing auth token");
+    return c.text("Missing auth token", 401);
   }
 
-  if (!env.ALLOWED_TOKENS.includes(authToken)) {
-    throw new StatusError(401, "Invalid auth token");
+  if (!ALLOWED_TOKENS.includes(authToken)) {
+    return c.text("Invalid auth token", 401);
   }
-};
 
-router.get("/v8/artifacts/:id", async (request: FullRequest, env: Bindings) => {
-  checkToken(request, env);
+  await next();
+});
 
-  if (!request.params?.id)
-    return error(400, `Can't lookup an artifact without an id`);
+app.get("/v8/artifacts/:id", async (c) => {
+  const artifactID = c.req.param("id");
+  if (!artifactID) {
+    return c.text("Can't lookup an artifact without an id", 400);
+  }
 
-  const existingArtifact = await env.ARTIFACTS.get(request.params.id, {
+  const { ARTIFACTS } = c.env;
+
+  const existingArtifact = await ARTIFACTS.get(artifactID, {
     type: "stream",
   });
 
   if (!existingArtifact) {
-    return missing("Cache miss");
+    return c.notFound();
   }
 
-  return new Response(existingArtifact);
+  return c.newResponse(existingArtifact);
 });
 
-async function saveArtifact(request: FullRequest, env: Bindings) {
-  checkToken(request, env);
+async function saveArtifact(c: Context<{ Bindings: Bindings }>) {
+  const { ARTIFACTS } = c.env;
+  const artifactID = c.req.param("id");
 
-  const { ARTIFACTS } = env;
-  if (!request.params?.id)
-    return error(400, `Can't store an artifact without an id`);
+  if (!artifactID) {
+    return c.text("Can't store an artifact without an id", 400);
+  }
 
   // Store the ReadableStream as a value :exploding_head:
-  await ARTIFACTS.put(request.params.id, request.body!);
+  await ARTIFACTS.put(artifactID, c.req.body!);
 
-  return json({ status: "success", message: "Artifact stored" });
+  return c.json({ status: "success", message: "Artifact stored" });
 }
 
-router.post("/v8/artifacts/:id", saveArtifact);
-router.put("/v8/artifacts/:id", saveArtifact);
+app.post("/v8/artifacts/:id", saveArtifact);
+app.put("/v8/artifacts/:id", saveArtifact);
 
-router.all("*", () => missing("Not found"));
+app.get("*", (c) => {
+  return c.notFound();
+});
 
-export const handleRequest = router.handle;
-
-export default { fetch: handleRequest };
+export default app;
