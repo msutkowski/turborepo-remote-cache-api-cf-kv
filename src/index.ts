@@ -18,38 +18,40 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.get("/v8/artifacts/:id", async (c) => {
-  const artifactID = c.req.param("id");
-  if (!artifactID) {
-    return c.text("Can't lookup an artifact without an id", 400);
-  }
+app
+  .get("/v8/artifacts/:id", async (c) => {
+    const artifactID = c.req.param("id");
+    if (!artifactID) {
+      return c.text("Can't lookup an artifact without an id", 400);
+    }
 
-  const { ARTIFACTS } = c.env;
+    const { ARTIFACTS } = c.env;
 
-  const existingArtifact = await ARTIFACTS.get(artifactID, {
-    type: "stream",
+    const existingArtifact = await ARTIFACTS.get(artifactID, {
+      type: "stream",
+    });
+
+    if (!existingArtifact) {
+      return c.notFound();
+    }
+
+    return c.newResponse(existingArtifact);
+  })
+  .on(["POST", "PUT"], "/v8/artifacts/:id", async (c) => {
+    const { ARTIFACTS } = c.env;
+    const artifactID = c.req.param("id");
+
+    if (!artifactID) {
+      return c.text("Can't store an artifact without an id", 400);
+    }
+
+    // Store the ReadableStream as a value :exploding_head:
+    await ARTIFACTS.put(artifactID, c.req.body!, {
+      expirationTtl: 60 * 60 * 24 * 7, // 1 week
+    });
+
+    return c.json({ status: "success", message: "Artifact stored" });
   });
-
-  if (!existingArtifact) {
-    return c.notFound();
-  }
-
-  return c.newResponse(existingArtifact);
-});
-
-app.on(["POST", "PUT"], "/v8/artifacts/:id", async (c) => {
-  const { ARTIFACTS } = c.env;
-  const artifactID = c.req.param("id");
-
-  if (!artifactID) {
-    return c.text("Can't store an artifact without an id", 400);
-  }
-
-  // Store the ReadableStream as a value :exploding_head:
-  await ARTIFACTS.put(artifactID, c.req.body!);
-
-  return c.json({ status: "success", message: "Artifact stored" });
-});
 
 app.get("*", (c) => {
   return c.notFound();
