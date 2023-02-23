@@ -37,7 +37,7 @@ app.get("/v8/artifacts/:id", async (c) => {
   return c.newResponse(existingArtifact);
 });
 
-async function saveArtifact(c: Context<{ Bindings: Bindings }>) {
+app.on(["POST", "PUT"], "/v8/artifacts/:id", async (c) => {
   const { ARTIFACTS } = c.env;
   const artifactID = c.req.param("id");
 
@@ -49,10 +49,7 @@ async function saveArtifact(c: Context<{ Bindings: Bindings }>) {
   await ARTIFACTS.put(artifactID, c.req.body!);
 
   return c.json({ status: "success", message: "Artifact stored" });
-}
-
-app.post("/v8/artifacts/:id", saveArtifact);
-app.put("/v8/artifacts/:id", saveArtifact);
+});
 
 app.get("*", (c) => {
   return c.notFound();
