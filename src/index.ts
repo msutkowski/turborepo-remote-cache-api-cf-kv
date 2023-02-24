@@ -20,6 +20,7 @@ app.use("*", async (c, next) => {
 
 app.get("/v8/artifacts/:id", async (c) => {
   const artifactID = c.req.param("id");
+
   if (!artifactID) {
     return c.text("Can't lookup an artifact without an id", 400);
   }
@@ -37,9 +38,36 @@ app.get("/v8/artifacts/:id", async (c) => {
   return c.newResponse(existingArtifact);
 });
 
+app.post("/v8/artifacts/events", async (c) => {
+  const { DURATION } = c.env;
+  const body = await c.req.json();
+  const currentTotal = (await DURATION.get("TIME_SAVED")) ?? 0;
+
+  let runningTotal = 0;
+
+  for await (const entry of body) {
+    const { hash, event } = entry;
+
+    if (event === "HIT") {
+      const timeSaved = await DURATION.get(hash);
+
+      if (timeSaved) {
+        runningTotal += Number(timeSaved);
+      }
+    }
+  }
+
+  await DURATION.put(
+    "TIME_SAVED",
+    (Number(currentTotal) + runningTotal).toString()
+  );
+  return c.json({ status: "success", message: "Event received" });
+});
+
 app.on(["POST", "PUT"], "/v8/artifacts/:id", async (c) => {
-  const { ARTIFACTS } = c.env;
+  const { ARTIFACTS, DURATION } = c.env;
   const artifactID = c.req.param("id");
+  const duration = c.req.header("x-artifact-duration");
 
   if (!artifactID) {
     return c.text("Can't store an artifact without an id", 400);
@@ -50,11 +78,22 @@ app.on(["POST", "PUT"], "/v8/artifacts/:id", async (c) => {
     expirationTtl: 60 * 60 * 24 * 7, // 1 week
   });
 
+  if (duration) {
+    await DURATION.put(artifactID, duration);
+  }
+
   return c.json({ status: "success", message: "Artifact stored" });
 });
 
-app.get("*", (c) => {
-  return c.notFound();
+app.get("/time_saved", async (c) => {
+  const timeSaved = await c.env.DURATION.get("TIME_SAVED");
+  if (!timeSaved) return c.json({});
+
+  return c.json({
+    milliseconds: Number(timeSaved),
+    seconds: Number(timeSaved) / 1000,
+    minutes: Number(timeSaved) / 1000 / 60,
+  });
 });
 
 export default app;
