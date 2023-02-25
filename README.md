@@ -4,12 +4,13 @@ This is just a quick proof of concept for using Cloudflare Workers + KV as a rem
 
 ```shell
 pnpm install
+mv .env.sample .env
 pnpm dev
 ```
 
 ### Configure your Turborepo
 
-In your turborepo, you simply need to add a config file in the same format that is done when using `npx turbo login; npx turbo link`. So, in the turborepo, set your `config.json` to look like this:
+In your turborepo, you simply need to add a config file in the same format that is done when using `npx turbo login; npx turbo link`. So, in the turborepo, set your `.turbo/config.json` to look like this:
 
 ```js file=".turbo/config.json"
 {

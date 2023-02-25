@@ -13,5 +13,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "bindings.d.ts"]
+  "include": ["src/**/*"]
 }

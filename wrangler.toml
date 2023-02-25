@@ -11,6 +11,7 @@ compatibility_flags = []
 
 kv_namespaces = [
   { binding = "ARTIFACTS", id = "<ignored>", preview_id = "<ignored>" },
+  { binding = "DURATION", id = "<ignored>", preview_id = "<ignored>" },
 ]
 
 [build]
